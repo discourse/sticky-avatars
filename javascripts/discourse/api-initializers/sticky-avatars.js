@@ -20,7 +20,10 @@ export default apiInitializer("0.11.1", (api) => {
             return;
           }
 
-          if (entry.target.clientHeight > LARGE_POST_HEIGHT_THRESHOLD) {
+          if (
+            entry.target.querySelector(".contents").clientHeight >
+            LARGE_POST_HEIGHT_THRESHOLD
+          ) {
             entry.target.classList.add("sticky-avatar");
           }
         });
