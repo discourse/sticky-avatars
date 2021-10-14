@@ -2,7 +2,7 @@ import { apiInitializer } from "discourse/lib/api";
 import { schedule } from "@ember/runloop";
 import Site from "discourse/models/site";
 
-const LARGE_POST_HEIGHT_THRESHOLD = 1500;
+const LARGE_POST_HEIGHT_THRESHOLD = window.innerHeight;
 
 export default apiInitializer("0.11.1", (api) => {
   if (Site.currentProp("mobileView")) {
