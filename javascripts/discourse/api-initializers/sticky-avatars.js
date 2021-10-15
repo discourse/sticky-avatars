@@ -20,9 +20,12 @@ export default apiInitializer("0.11.1", (api) => {
             return;
           }
 
+          const isScrollingUpward =
+            entry.boundingClientRect.y < entry.rootBounds.y;
           if (
+            isScrollingUpward ||
             entry.target.querySelector(".contents").clientHeight >
-            LARGE_POST_HEIGHT_THRESHOLD
+              LARGE_POST_HEIGHT_THRESHOLD
           ) {
             entry.target.classList.add("sticky-avatar");
           }
