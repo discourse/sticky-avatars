@@ -17,6 +17,7 @@ export default apiInitializer("0.11.1", (api) => {
       intersectionObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) {
+            entry.target.classList.remove("sticky-avatar");
             return;
           }
 
