@@ -21,13 +21,19 @@ export default apiInitializer("0.11.1", (api) => {
             return;
           }
 
+          const headerHeight =
+            document.querySelector(".d-header")?.clientHeight || 0;
+          const postHeight = entry.target.clientHeight;
+          const postContentHeight =
+            entry.target.querySelector(".contents")?.clientHeight || 0;
+          const postViewportHeight =
+            window.innerHeight -
+            headerHeight -
+            (postHeight - postContentHeight);
+
           const isScrollingUpward =
             entry.boundingClientRect.y < entry.rootBounds.y;
-          if (
-            isScrollingUpward ||
-            entry.target.querySelector(".contents").clientHeight >
-              LARGE_POST_HEIGHT_THRESHOLD
-          ) {
+          if (isScrollingUpward || postViewportHeight <= postContentHeight) {
             entry.target.classList.add("sticky-avatar");
           }
         });
