@@ -10,40 +10,43 @@ export default apiInitializer("0.11.1", (api) => {
   let intersectionObserver;
   let mutationObserver;
 
+  let direction = "⬇️";
+  let prevYPosition = -1;
+  const handleScrollPosition = () => {
+    if (window.scrollY > prevYPosition) {
+      direction = "⬇️";
+    } else {
+      direction = "⬆️";
+    }
+
+    prevYPosition = window.scrollY;
+
+    if (window.scrollY <= 0) {
+      document
+        .querySelectorAll("#topic .post-stream .topic-post.sticky-avatar")
+        .forEach((postNode) => {
+          postNode.classList.remove("sticky-avatar");
+        });
+    }
+  };
+
   api.onAppEvent("page:topic-loaded", () => {
     schedule("afterRender", () => {
-      let direction = "⬇️";
-      let prevYPosition = -1;
+      document.addEventListener("scroll", handleScrollPosition);
+
       const headerHeight =
         document.querySelector(".d-header")?.clientHeight || 0;
 
-      const setScrollDirection = () => {
-        if (window.scrollY > prevYPosition) {
-          direction = "⬇️";
-        } else {
-          direction = "⬆️";
-        }
-
-        prevYPosition = window.scrollY;
-      };
-
       intersectionObserver = new IntersectionObserver(
         (entries) => {
-          setScrollDirection();
-
           entries.forEach((entry) => {
-            if (!entry.isIntersecting) {
+            if (!entry.isIntersecting || entry.intersectionRatio === 1) {
               entry.target.classList.remove("sticky-avatar");
               return;
             }
 
-            if (entry.intersectionRatio === 1) {
-              entry.target.classList.remove("sticky-avatar");
-              return;
-            }
-
-            const postContentHeight =
-              entry.target.querySelector(".contents")?.clientHeight || 0;
+            const postContentHeight = entry.target.querySelector(".contents")
+              ?.clientHeight;
 
             if (
               direction === "⬆️" ||
@@ -81,6 +84,8 @@ export default apiInitializer("0.11.1", (api) => {
   });
 
   api.cleanupStream(() => {
+    document.removeEventListener("scroll", handleScrollPosition);
+
     intersectionObserver?.disconnect();
     intersectionObserver = null;
 
