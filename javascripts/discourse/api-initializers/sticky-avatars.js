@@ -2,8 +2,6 @@ import { apiInitializer } from "discourse/lib/api";
 import { schedule } from "@ember/runloop";
 import Site from "discourse/models/site";
 
-const LARGE_POST_HEIGHT_THRESHOLD = window.innerHeight;
-
 export default apiInitializer("0.11.1", (api) => {
   if (Site.currentProp("mobileView")) {
     return;
@@ -14,30 +12,51 @@ export default apiInitializer("0.11.1", (api) => {
 
   api.onAppEvent("page:topic-loaded", () => {
     schedule("afterRender", () => {
-      intersectionObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) {
-            entry.target.classList.remove("sticky-avatar");
-            return;
-          }
+      let direction = "⬆️";
+      let prevYPosition = window.scrollY;
+      const headerHeight =
+        document.querySelector(".d-header")?.clientHeight || 0;
 
-          const headerHeight =
-            document.querySelector(".d-header")?.clientHeight || 0;
-          const postHeight = entry.target.clientHeight;
-          const postContentHeight =
-            entry.target.querySelector(".contents")?.clientHeight || 0;
-          const postViewportHeight =
-            window.innerHeight -
-            headerHeight -
-            (postHeight - postContentHeight);
+      const setScrollDirection = () => {
+        if (window.scrollY > prevYPosition) {
+          direction = "⬇️";
+        } else {
+          direction = "⬆️";
+        }
 
-          const isScrollingUpward =
-            entry.boundingClientRect.y < entry.rootBounds.y;
-          if (isScrollingUpward || postViewportHeight <= postContentHeight) {
-            entry.target.classList.add("sticky-avatar");
-          }
-        });
-      });
+        prevYPosition = window.scrollY;
+      };
+
+      intersectionObserver = new IntersectionObserver(
+        (entries) => {
+          setScrollDirection();
+
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+              entry.target.classList.remove("sticky-avatar");
+              return;
+            }
+
+            if (entry.intersectionRatio === 1) {
+              entry.target.classList.remove("sticky-avatar");
+              return;
+            }
+
+            const postHeight = entry.target.clientHeight;
+            const postContentHeight =
+              entry.target.querySelector(".contents")?.clientHeight || 0;
+            const postViewportHeight =
+              window.innerHeight -
+              headerHeight -
+              (postHeight - postContentHeight);
+
+            if (direction === "⬆️" || postViewportHeight <= postContentHeight) {
+              entry.target.classList.add("sticky-avatar");
+            }
+          });
+        },
+        { threshold: [0.0, 1.0], rootMargin: `-${headerHeight}px 0px 0px 0px` }
+      );
 
       document
         .querySelectorAll("#topic .post-stream .topic-post")
