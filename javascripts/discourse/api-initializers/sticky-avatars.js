@@ -12,8 +12,8 @@ export default apiInitializer("0.11.1", (api) => {
 
   api.onAppEvent("page:topic-loaded", () => {
     schedule("afterRender", () => {
-      let direction = "⬆️";
-      let prevYPosition = window.scrollY;
+      let direction = "⬇️";
+      let prevYPosition = -1;
       const headerHeight =
         document.querySelector(".d-header")?.clientHeight || 0;
 
@@ -42,15 +42,13 @@ export default apiInitializer("0.11.1", (api) => {
               return;
             }
 
-            const postHeight = entry.target.clientHeight;
             const postContentHeight =
               entry.target.querySelector(".contents")?.clientHeight || 0;
-            const postViewportHeight =
-              window.innerHeight -
-              headerHeight -
-              (postHeight - postContentHeight);
 
-            if (direction === "⬆️" || postViewportHeight <= postContentHeight) {
+            if (
+              direction === "⬆️" ||
+              postContentHeight > window.innerHeight - headerHeight
+            ) {
               entry.target.classList.add("sticky-avatar");
             }
           });
