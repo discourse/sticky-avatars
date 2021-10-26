@@ -42,7 +42,11 @@ export default apiInitializer("0.11.1", (api) => {
   }
 
   function _handlePostNodes() {
+    _clearIntersectionObserver();
+
     schedule("afterRender", () => {
+      _initIntersectionObserver();
+
       document.querySelectorAll(TOPIC_POST_SELECTOR).forEach((postNode) => {
         _applyMarginOnOp(postNode);
         intersectionObserver.observe(postNode);
@@ -51,31 +55,28 @@ export default apiInitializer("0.11.1", (api) => {
   }
 
   function _initIntersectionObserver() {
-    schedule("afterRender", () => {
-      const headerHeight =
-        document.querySelector(".d-header")?.clientHeight || 0;
+    const headerHeight = document.querySelector(".d-header")?.clientHeight || 0;
 
-      intersectionObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (!entry.isIntersecting || entry.intersectionRatio === 1) {
-              entry.target.classList.remove(STICKY_CLASS);
-              return;
-            }
+    intersectionObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting || entry.intersectionRatio === 1) {
+            entry.target.classList.remove(STICKY_CLASS);
+            return;
+          }
 
-            const postContentHeight = entry.target.querySelector(".contents")
-              ?.clientHeight;
-            if (
-              direction === "⬆️" ||
-              postContentHeight > window.innerHeight - headerHeight
-            ) {
-              entry.target.classList.add(STICKY_CLASS);
-            }
-          });
-        },
-        { threshold: [0.0, 1.0], rootMargin: `-${headerHeight}px 0px 0px 0px` }
-      );
-    });
+          const postContentHeight = entry.target.querySelector(".contents")
+            ?.clientHeight;
+          if (
+            direction === "⬆️" ||
+            postContentHeight > window.innerHeight - headerHeight
+          ) {
+            entry.target.classList.add(STICKY_CLASS);
+          }
+        });
+      },
+      { threshold: [0.0, 1.0], rootMargin: `-${headerHeight}px 0px 0px 0px` }
+    );
   }
 
   function _clearIntersectionObserver() {
@@ -89,5 +90,5 @@ export default apiInitializer("0.11.1", (api) => {
 
   api.onAppEvent("page:topic-loaded", _initIntersectionObserver);
 
-  api.onAppEvent("header:hide-topic", _clearIntersectionObserver);
+  api.cleanupStream(_clearIntersectionObserver);
 });
