@@ -33,14 +33,20 @@ export default apiInitializer("0.11.1", (api) => {
 
   function _applyMarginOnOp(op) {
     const topicAvatarNode = op.querySelector(".topic-avatar");
+
+    if (!topicAvatarNode) {
+      return;
+    }
+
     if (op.querySelector("#post_1")) {
       const topicMapNode = op.querySelector(".topic-map");
       if (topicMapNode) {
         topicAvatarNode.style.marginBottom = `${topicMapNode.clientHeight}px`;
+        return;
       }
-    } else {
-      topicAvatarNode.style.marginBottom = null;
     }
+
+    topicAvatarNode.style.marginBottom = null;
   }
 
   function _handlePostNodes() {
