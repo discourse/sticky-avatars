@@ -1,39 +1,57 @@
 import { apiInitializer } from "discourse/lib/api";
-import { schedule } from "@ember/runloop";
 import Site from "discourse/models/site";
+import { schedule } from "@ember/runloop";
 
 export default apiInitializer("0.11.1", (api) => {
   if (Site.currentProp("mobileView")) {
     return;
   }
 
-  let intersectionObserver;
-  let mutationObserver;
+  const STICKY_CLASS = "sticky-avatar";
+  const TOPIC_POST_SELECTOR = "#topic .post-stream .topic-post";
 
+  let intersectionObserver;
   let direction = "⬇️";
-  let prevYPosition = -1;
-  const handleScrollPosition = () => {
-    if (window.scrollY > prevYPosition) {
+  let prevOffset = -1;
+  function _handleScroll(offset) {
+    if (offset >= prevOffset) {
       direction = "⬇️";
     } else {
       direction = "⬆️";
     }
 
-    prevYPosition = window.scrollY;
+    prevOffset = offset;
 
-    if (window.scrollY <= 0) {
+    if (offset <= 0) {
+      direction = "⬇️";
+
       document
-        .querySelectorAll("#topic .post-stream .topic-post.sticky-avatar")
-        .forEach((postNode) => {
-          postNode.classList.remove("sticky-avatar");
-        });
+        .querySelectorAll(`${TOPIC_POST_SELECTOR}.${STICKY_CLASS}`)
+        .forEach((node) => node.classList.remove(STICKY_CLASS));
     }
-  };
+  }
 
-  api.onAppEvent("page:topic-loaded", () => {
+  function _applyMarginOnOp(op) {
+    const topicAvatarNode = op.querySelector(".topic-avatar");
+    if (op.querySelector("#post_1")) {
+      const topicMapNode = op.querySelector(".topic-map");
+      topicAvatarNode.style.marginBottom = `${topicMapNode.clientHeight}px`;
+    } else {
+      topicAvatarNode.style.marginBottom = null;
+    }
+  }
+
+  function _handlePostNodes() {
     schedule("afterRender", () => {
-      document.addEventListener("scroll", handleScrollPosition);
+      document.querySelectorAll(TOPIC_POST_SELECTOR).forEach((postNode) => {
+        _applyMarginOnOp(postNode);
+        intersectionObserver.observe(postNode);
+      });
+    });
+  }
 
+  function _initIntersectionObserver() {
+    schedule("afterRender", () => {
       const headerHeight =
         document.querySelector(".d-header")?.clientHeight || 0;
 
@@ -41,55 +59,35 @@ export default apiInitializer("0.11.1", (api) => {
         (entries) => {
           entries.forEach((entry) => {
             if (!entry.isIntersecting || entry.intersectionRatio === 1) {
-              entry.target.classList.remove("sticky-avatar");
+              entry.target.classList.remove(STICKY_CLASS);
               return;
             }
 
             const postContentHeight = entry.target.querySelector(".contents")
               ?.clientHeight;
-
             if (
               direction === "⬆️" ||
               postContentHeight > window.innerHeight - headerHeight
             ) {
-              entry.target.classList.add("sticky-avatar");
+              entry.target.classList.add(STICKY_CLASS);
             }
           });
         },
         { threshold: [0.0, 1.0], rootMargin: `-${headerHeight}px 0px 0px 0px` }
       );
-
-      document
-        .querySelectorAll("#topic .post-stream .topic-post")
-        .forEach((postNode) => {
-          intersectionObserver.observe(postNode);
-        });
-
-      mutationObserver = new MutationObserver(function (mutationsList) {
-        mutationsList.forEach((mutation) => {
-          mutation.addedNodes.forEach((addedPostNode) => {
-            if (addedPostNode.classList.contains("topic-post")) {
-              intersectionObserver.observe(addedPostNode);
-            }
-          });
-        });
-      });
-
-      mutationObserver.observe(document.querySelector("#topic .post-stream"), {
-        childList: true,
-        subtree: false,
-        attributes: false,
-      });
     });
-  });
+  }
 
-  api.cleanupStream(() => {
-    document.removeEventListener("scroll", handleScrollPosition);
-
+  function _clearIntersectionObserver() {
     intersectionObserver?.disconnect();
     intersectionObserver = null;
+  }
 
-    mutationObserver?.disconnect();
-    mutationObserver = null;
-  });
+  api.onAppEvent("topic:current-post-scrolled", _handlePostNodes);
+
+  api.onAppEvent("topic:scrolled", _handleScroll);
+
+  api.onAppEvent("page:topic-loaded", _initIntersectionObserver);
+
+  api.onAppEvent("header:hide-topic", _clearIntersectionObserver);
 });
