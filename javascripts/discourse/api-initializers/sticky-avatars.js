@@ -35,7 +35,9 @@ export default apiInitializer("0.11.1", (api) => {
     const topicAvatarNode = op.querySelector(".topic-avatar");
     if (op.querySelector("#post_1")) {
       const topicMapNode = op.querySelector(".topic-map");
-      topicAvatarNode.style.marginBottom = `${topicMapNode.clientHeight}px`;
+      if (topicMapNode) {
+        topicAvatarNode.style.marginBottom = `${topicMapNode.clientHeight}px`;
+      }
     } else {
       topicAvatarNode.style.marginBottom = null;
     }
